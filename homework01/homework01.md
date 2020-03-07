@@ -48,7 +48,21 @@ $$
 
 ##### 1.8.3
 
-reduce 10% voltage
+Pentium 4 Prescott : 
+$$
+V'I = \frac{1}{2} CV'^2f=0.9*100W \\
+	V' = 1.1825V
+$$
+reduce 0.675V
+
+
+
+Core i5 Ivy Bridge : 
+$$
+V'I + \frac{1}{2}CV'^2f=0.9*70W \\
+V' = 0.8413V
+$$
+reduce 0.587V
 
 ### 1.15
 
