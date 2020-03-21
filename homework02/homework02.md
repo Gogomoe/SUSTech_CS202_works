@@ -64,11 +64,11 @@ not, has overflow.
 
 ##### 2.12.3
 
-0x00000000
+0xB0000000
 
 ##### 2.12.4
 
-not, has overflow
+not overflow
 
 ##### 2.12.5
 
