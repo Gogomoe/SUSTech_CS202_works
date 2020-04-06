@@ -59,17 +59,15 @@ underflow
 
 ### 3.16
 
-layer1: 8 adders
+layer1: 4 adders
 
-layer2: 4 adders
+layer2: 2 adders
 
-layer3: 2 adders
+layer3: 1 adder
 
-layer4: 1 adder
+3 layers need to use
 
-4 layers need to use
-
-4 layers * 4 time units/per layer = 16 time units
+3 layers * 4 time units/per layer = 12 time units
 
 ### 3.17
 
