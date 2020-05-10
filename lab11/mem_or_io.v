@@ -10,10 +10,33 @@ module mem_or_io(
     output[31:0] read_data,
     output[31:0] write_data,
     output[31:0] address,
-    output       LEDCtrl,
-    output       SwitchCtrl
+    output       led_select,
+    output       switch_select
 );
 
-// TODO finish the module
+wire read = mem_read || io_read;
+wire write = mem_write || io_write;
+
+always @(*) begin
+    if(read) begin
+        read_data = io_read ? io_read_data : mem_read_data;
+    end
+    else begin
+        read_data = 32'hZZZZZZZZ;
+    end
+end
+
+always @(*) begin
+    if(write) begin
+        write_data = calc_data;
+    end
+    else begin
+        write_data = 32'hZZZZZZZZ;
+    end
+end
+
+assign address = calc_address;
+assign led_select = io_write;
+assign switch_select = io_read;
 
 endmodule
