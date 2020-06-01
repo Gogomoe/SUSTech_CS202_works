@@ -1,7 +1,7 @@
-module CPU(
-    input clk, reset,
-    output[23:0] led_out,
-    input[23:0] switch_input
+module minisys_sc(
+    input clk, rst,
+    output[23:0] led,
+    input[23:0] switch
 );
 
 wire clock;
@@ -60,7 +60,7 @@ Ifetc32 Ifetc32_inst(
     Jrn,
     Zero,
     clock,
-    reset,
+    rst,
     opcplus4
 );
 
@@ -98,7 +98,7 @@ Idecode32 Idecode32_inst(
     RegDst,
     Sign_extend,
     clock,
-    reset,
+    rst,
     opcplus4
 );
 
@@ -145,20 +145,20 @@ mem_or_io mem_or_io_inst(
 
 leds leds_inst(
     clock,       // clock
-    reset,       // reset
+    rst,       // rst
     IOWrite,     // write enable
     led_select,  // select led
     write_data,
-    led_out
+    led
 );
 
 switchs switchs_inst(
     clock,
-    reset,
+    rst,
     IORead,
     switch_select,
     io_read_data,
-    switch_input
+    switch
 );
 
 dmemory32 dmemory32_inst(

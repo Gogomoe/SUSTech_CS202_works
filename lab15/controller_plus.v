@@ -1,9 +1,11 @@
 module controller_plus(
+  input        clk, rst,
   input[5:0]   opcode,
   // instruction[31..26]    
   input[5:0]   function_opcode,
   // instructions[5..0]
   input[21:0]  alu_result_high,
+  input        zero,
   // from alu_result[31..10], help determine whether to process Mem or IO
   output       reg_dst,
   //1 indicate destination register is "rd",otherwise it's "rt"    
@@ -32,8 +34,11 @@ module controller_plus(
   //1 indicate the instruction is I-type but isn't "beq","bne","LW" or "SW"
   output       shamt,
   //1 indicate the instruction is shift instruction
-  output[1:0]  alu_op
+  output[1:0]  alu_op,
   //if it's R-type or I_format=1,bit1 is 1, if it's "beq" or "bne"?,bit 0 is 1
+  output[1:0]  write_pc,
+  output       write_ir,
+  output       write_alu_result
 );
 
 wire r_type = opcode == 6'b000000;
@@ -51,15 +56,29 @@ wire lw = opcode == 6'b100011;
 wire sw = opcode == 6'b101011;
 wire use_io = alu_result_high[21:0] == 22'H3FFFFF;
 
-assign men_io_to_reg = io_read || men_read;
-assign men_write = sw && !use_io;
+assign men_io_to_reg = state == swb && io_read || men_read;
+assign men_write = state == smem && sw && !use_io;
 assign men_read = lw && !use_io;
-assign io_write = sw && use_io;
+assign io_write = state == smem && sw && use_io;
 assign io_read = lw && use_io;
 
-assign reg_dst = r_type;
+assign reg_dst = state == swb && r_type;
 
-assign reg_write = (opcode[5:3] == 3'b001 || lw || jal || r_type) && !jrn;
+assign reg_write = (state == sid && jal == 1) || (state == swb);
+
+assign write_pc = {
+    (
+        (state == sid && (jmp || jal || jrn)) ||
+        (state == sexe && ((branch && zero) || (n_branch && !zero)))
+    ),
+    (
+        (state == sif) ||
+        (state == sexe && ((branch && zero) || (n_branch && !zero)))
+    )
+};
+
+assign write_ir = state == sif;
+assign write_alu_result = state == sexe;
 
 assign jmp = opcode == 6'b000010;
 assign jal = opcode == 6'b000011;
@@ -77,4 +96,56 @@ wire srav = r_type && function_opcode == 6'b000111;
 
 assign shamt = sll || srl || sra || sllv || srlv || srav;
 
+reg [2:0] next_state;
+reg [2:0] state;
+
+parameter [2:0] sinit = 3'b000,
+                sif   = 3'b001,
+                sid   = 3'b010,
+                sexe  = 3'b011,
+                smem  = 3'b100,
+                swb   = 3'b101;
+
+always @ (posedge clk or posedge rst) begin
+    if(rst) begin
+        state <= sinit;
+        end
+    else begin
+        state <= next_state;
+    end
+end
+
+always @(*) begin
+    case(state)
+        sinit: begin next_state = sif; end
+        sif: begin next_state = sid; end
+        sid: begin
+            if(jmp || jal) begin //J-type instruction
+                // the next state is sif(instruction fetch)
+                next_state = sif;
+            end else begin
+                // the next state is sexe(instruction execution)
+                next_state = sexe;
+            end
+        end
+        sexe: begin
+            if(lw || sw) begin
+                next_state = smem;
+            end else if(branch || n_branch) begin
+                next_state = sif;
+            end else begin
+                next_state = swb;
+            end
+        end
+        smem: begin
+            if(lw) begin
+                next_state = swb;
+            end else begin
+                next_state = sif;
+            end
+        end
+        swb: begin next_state = sif; end
+        default: begin next_state = sinit; end
+    endcase
+end
 endmodule

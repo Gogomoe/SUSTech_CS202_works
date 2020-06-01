@@ -10,35 +10,48 @@ module instruction_fetch(
     input            jmp,
     input            jal,
     input            jrn,
-    input            zero
+    input            zero,
+    input[1:0]       write_pc,
+    input            write_ir
 );
 
-reg[31:0] pc;
-assign pc_plus_4 = pc + 4;
+
+wire[31:0] read_instruction;
 
 prgrom inst(
     .clka(clk),
-    .addra(pc[15:2]),
-    .douta(instruction)
+    .addra(PC[15:2]),
+    .douta(read_instruction)
 );
-
-wire [31:0] next_pc_1 = ((zero && branch) || (!zero && n_branch)) ? add_result[31:0] : (pc_plus_4 >> 2);
-wire [31:0] next_pc_2 = (jrn) ? read_data_1[31:0] : next_pc_1;
-wire [31:0] next_pc_3 = (jal || jmp) ? {2'b0 , pc[31:28] , instruction[25:0]} : next_pc_2;
-
-always @(negedge clk) begin
-    if(rst) begin
-        pc <= 32'd0;
-    end
-    else begin
-        pc <= (next_pc_3 << 2);
-    end
-end
 
 always @(negedge clk) begin
     if(jal) begin
         old_pc_plus_4 <= (pc_plus_4 >> 2);
     end
 end
+
+reg [31:0] IR;
+reg [31:0] PC;
+
+always @(negedge clk) begin
+    if(rst) begin IR <= 0; end
+    else if(write_ir) begin IR <= read_instruction; end
+    else begin IR <= IR; end
+end
+
+always @(negedge clk) begin
+    if(rst) begin PC <= 32'b0; end
+    else begin
+        case(write_pc)
+            2'b01: PC <= PC + 4;
+            2'b10: PC <= ((jrn ? read_data_1[31:0] : {2'b0 , PC[31:28] , instruction[25:0]}) << 2);
+            2'b11: PC <= (add_result[31:0] << 2);
+        endcase
+    end
+end
+
+assign pc_plus_4 = PC;
+assign instruction = IR;
+
 
 endmodule

@@ -1,4 +1,6 @@
 module execute(
+    input clk, rst,
+    input write_alu_result,
     input[31:0]      data1,
     input[31:0]      data2,
     input[31:0]      sign_extend,
@@ -67,23 +69,33 @@ end
 
 wire[31:0] A_minus_B = Ainput - Binput;
 
+reg[31:0] calc_alu_result;
+
 always @(*) begin
     //set type operation
     if(((alu_ctl==3'b111) && (exe_code[3]==1))||((alu_ctl[2:1]==2'b11) && (i_format==1))) begin
-         // A_minus_B[31] == 1  ===  Ainput - Binput < 0
-         alu_result = (A_minus_B[31] == 1) ? 1 : 0;
+        // A_minus_B[31] == 1  ===  Ainput - Binput < 0
+        calc_alu_result = (A_minus_B[31] == 1) ? 1 : 0;
     end
     //lui operation
     else if((alu_ctl==3'b101) && (i_format==1))begin
-        alu_result[31:0]={Binput[15:0],{16{1'b0}}};
+        calc_alu_result[31:0]={Binput[15:0],{16{1'b0}}};
     end
     //shift operation
     else if(sftmd==1)begin
-        alu_result = Sinput;
+        calc_alu_result = Sinput;
     end
     //other types of operation in ALU
     else begin
-        alu_result = alu_output_mux;
+        calc_alu_result = alu_output_mux;
+    end
+end
+
+always@(negedge clk or posedge rst) begin
+    if(rst) begin
+        alu_result = 32'hxxxxxxxx;
+    end else if(write_alu_result) begin
+        alu_result = calc_alu_result;
     end
 end
 

@@ -42,6 +42,10 @@ wire men_write;
 wire io_read;
 wire io_write;
 
+wire[1:0] write_pc;
+wire      write_ir;
+wire      write_alu_result;
+
 cpuclk cpuclk_inst(
     .clk_in1(clk),
     .clk_out1(clock)
@@ -60,14 +64,18 @@ instruction_fetch instruction_fetch_inst(
     jmp,
     jal,
     jrn,
-    zero
+    zero,
+    write_pc,
+    write_ir
 );
 
 
 controller_plus controller_plus_inst(
+    clock, reset,
     opcode,
     function_opcode,
     alu_result_high,
+    zero,
     reg_dst,
     reg_write,
     alu_src,
@@ -83,7 +91,10 @@ controller_plus controller_plus_inst(
     jal,
     i_format,
     shamt,
-    alu_op
+    alu_op,
+    write_pc,
+    write_ir,
+    write_alu_result
 );
 
 instruction_decoder instruction_decoder_inst(
@@ -102,6 +113,8 @@ instruction_decoder instruction_decoder_inst(
 );
 
 execute execute_inst(
+    clock, reset,
+    write_alu_result,
     read_data_1,
     read_data_2,
     sign_extend,
